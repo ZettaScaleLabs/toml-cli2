@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 0.3.0
+## 0.3.2
 
 * Started publishing release binaries for Linux.  These have also been
   backfilled for past releases, back to v0.2.1. (#3)

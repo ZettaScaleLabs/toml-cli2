@@ -1,6 +1,6 @@
 [package]
 name = "toml-cli2"
-version = "0.3.1"
+version = "0.3.2"
 description = "A simple CLI for editing and querying TOML files."
 authors = [
     "Greg Price <gnprice@gmail.com>",
