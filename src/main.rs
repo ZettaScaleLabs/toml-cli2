@@ -54,7 +54,14 @@ enum Args {
         /// String value to place at the given spot (bool, array, etc. are TODO)
         value_str: String, // TODO more forms
     },
-    //
+    Unset {
+        /// Path to the TOML file to read
+        #[structopt(parse(from_os_str))]
+        path: PathBuf,
+
+        /// Query within the TOML data (e.g. `dependencies.serde`, `foo[0].bar`)
+        query: String,
+    },
     // TODO: append/add (name TBD)
 }
 
@@ -95,7 +102,8 @@ fn main() {
             path,
             query,
             value_str,
-        } => set(&path, &query, &value_str),
+        } => set(&path, &query, Some(&value_str)),
+        Args::Unset { path, query } => set(&path, &query, None),
     };
     result.unwrap_or_else(|err| {
         match err.downcast::<SilentError>() {
@@ -183,7 +191,7 @@ fn print_toml_fragment(doc: &Document, tpath: &[TpathSegment]) {
     print!("{}", doc);
 }
 
-fn set(path: &PathBuf, query: &str, value_str: &str) -> Result<(), Error> {
+fn set(path: &PathBuf, query: &str, value_str: Option<&str>) -> Result<(), Error> {
     let tpath = parse_query_cli(query)?.0;
     let mut doc = read_parse(path)?;
 
@@ -227,7 +235,10 @@ fn set(path: &PathBuf, query: &str, value_str: &str) -> Result<(), Error> {
             }
         }
     }
-    *item = value(value_str);
+    *item = match value_str {
+        Some(value_str) => value(value_str),
+        None => Item::None,
+    };
 
     // TODO actually write back
     print!("{}", doc);

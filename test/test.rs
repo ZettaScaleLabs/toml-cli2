@@ -106,14 +106,14 @@ tomltest_get_err_empty!(get_missing_num, ["key[1]"]);
 macro_rules! tomltest_set {
     ($name:ident, $args:expr, $expected:expr) => {
         tomltest!($name, |mut t: TestCaseState| {
-            t.write_file(INITIAL);
+            t.write_file(INITIAL_SET);
             t.cmd.args(["set", &t.filename()]).args($args);
             check_eq(&$expected, &t.expect_success());
         });
     };
 }
 
-const INITIAL: &str = r#"
+const INITIAL_SET: &str = r#"
 [x]
 y = 1
 "#;
@@ -126,12 +126,12 @@ y = "new"
 
 #[rustfmt::skip]
 tomltest_set!(set_string_existing_table, ["x.z", "123"], format!(
-r#"{INITIAL}z = "123"
+r#"{INITIAL_SET}z = "123"
 "#));
 
 #[rustfmt::skip]
 tomltest_set!(set_string_new_table, ["foo.bar", "baz"], format!(
-r#"{INITIAL}
+r#"{INITIAL_SET}
 [foo]
 bar = "baz"
 "#));
@@ -139,12 +139,58 @@ bar = "baz"
 #[rustfmt::skip]
 tomltest_set!(set_string_toplevel, ["foo", "bar"], format!(
 r#"foo = "bar"
-{INITIAL}"#));
+{INITIAL_SET}"#));
 
 // TODO test `set` on string with newlines and other fun characters
 // TODO test `set` when existing value is an array, table, or array of tables
 // TODO test `set` inside existing array or inline table
 // TODO test `set` inside existing array of tables
+
+macro_rules! tomltest_unset {
+    ($name:ident, $args:expr, $expected:expr) => {
+        tomltest!($name, |mut t: TestCaseState| {
+            t.write_file(INITIAL_UNSET);
+            t.cmd.args(["unset", &t.filename()]).args($args);
+            check_eq(&$expected, &t.expect_success());
+        });
+    };
+}
+
+const INITIAL_UNSET: &str = r#"
+[x]
+y = 1
+z = { u = 1, t = 2 }
+"#;
+
+#[rustfmt::skip]
+tomltest_unset!(unset_existing, ["x.y"], r#"
+[x]
+z = { u = 1, t = 2 }
+"#);
+
+#[rustfmt::skip]
+tomltest_unset!(unset_existing_inline_table, ["x.z"], format!(
+r#"
+[x]
+y = 1
+"#));
+
+// FIXME(fuzzypixelz): There should be a space between "1" and "}".
+#[rustfmt::skip]
+tomltest_unset!(unset_existing_inline_table_field_last, ["x.z.t"], format!(
+r#"
+[x]
+y = 1
+z = {{ u = 1}}
+"#));
+
+#[rustfmt::skip]
+tomltest_unset!(unset_existing_inline_table_field_first, ["x.z.u"], format!(
+r#"
+[x]
+y = 1
+z = {{ t = 2 }}
+"#));
 
 struct TestCaseState {
     cmd: process::Command,
