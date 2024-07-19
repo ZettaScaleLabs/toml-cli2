@@ -1,4 +1,4 @@
-name: Deploy toml
+name: Upload binaries
 
 on: workflow_dispatch
 
