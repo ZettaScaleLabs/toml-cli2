@@ -1,0 +1,60 @@
+name: Deploy toml
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: [self-hosted, "${{ matrix.os }}"]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-ventura
+            TARGET: aarch64-apple-darwin
+
+          - os: macos-ventura
+            TARGET: x86_64-apple-darwin
+
+          - os: ubuntu-22.04
+            TARGET: arm-unknown-linux-musleabihf
+
+          - os: ubuntu-22.04
+            TARGET: aarch64-unknown-linux-musl
+
+          - os: ubuntu-22.04
+            TARGET: armv7-unknown-linux-musleabihf
+
+          - os: ubuntu-22.04
+            TARGET: x86_64-unknown-linux-musl
+
+          - os: windows-11
+            TARGET: x86_64-pc-windows-msvc
+            EXTENSION: .exe
+
+    steps:
+      - name: Building ${{ matrix.TARGET }}
+        run: echo "${{ matrix.TARGET }}"
+
+      - uses: actions/checkout@master
+
+      - run: rustup target add ${{ matrix.TARGET }}
+
+      - run: cargo build --verbose --release --target=${{ matrix.TARGET }}
+
+      - name: Rename
+        run: cp target/${{ matrix.TARGET }}/release/toml${{ matrix.EXTENSION }} toml-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: toml-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+          path: toml-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+
+      - uses: svenstaro/upload-release-action@v2
+        name: Upload binaries to release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: toml-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+          asset_name: toml-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+          tag: ${{ github.ref }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          overwrite: true
